@@ -64,5 +64,41 @@ namespace TinyEngine
                 Console.WriteLine($"program link error:\n{info}");
             }
         }
+
+        public void SetMatrix4(string name, OpenTK.Mathematics.Matrix4 value)
+        {
+            int location = GL.GetUniformLocation(Handle, name);
+            if (location != -1)
+            {
+                GL.UniformMatrix4(location, false, ref value);
+            }
+        }
+
+        public void SetVector3(string name, OpenTK.Mathematics.Vector3 value)
+        {
+            int location = GL.GetUniformLocation(Handle, name);
+            if (location != -1)
+            {
+                GL.Uniform3(location, value);
+            }
+        }
+
+        public void SetFloat(string name, float value)
+        {
+            int location = GL.GetUniformLocation(Handle, name);
+            if (location != -1)
+            {
+                GL.Uniform1(location, value);
+            }
+        }
+
+        public void SetInt(string name, int value)
+        {
+            int location = GL.GetUniformLocation(Handle, name);
+            if (location != -1)
+            {
+                GL.Uniform1(location, value);
+            }
+        }
     }
 }

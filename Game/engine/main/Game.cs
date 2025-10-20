@@ -5,6 +5,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using TinyEngine.Camera;
+using TinyEngine.Graphics;
 
 namespace TinyEngine
 {
@@ -20,38 +21,107 @@ namespace TinyEngine
         protected override void OnLoad()
         {
             base.OnLoad();
-            GL.ClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+            GL.ClearColor(0.1f, 0.1f, 0.2f, 1.0f);
             GL.Enable(EnableCap.DepthTest);
 
             _renderer = new Renderer();
             _renderer.Initialize();
 
-            _camera = new FreeCam(new Vector3(0f, 0f, 3f), new Quaternion(0, 0, 0));
+            _camera = new FreeCam(new Vector3(0f, 1.5f, 4f), new Quaternion(0, 0, 0));
             CursorState = CursorState.Grabbed;
 
             float[] cubeVertices = {
-                // positions         // colors
-                -0.5f, -0.5f, -0.5f,  1f, 0f, 0f,
-                 0.5f, -0.5f, -0.5f,  0f, 1f, 0f,
-                 0.5f,  0.5f, -0.5f,  0f, 0f, 1f,
-                -0.5f,  0.5f, -0.5f,  1f, 1f, 0f,
-                -0.5f, -0.5f,  0.5f,  1f, 0f, 1f,
-                 0.5f, -0.5f,  0.5f,  0f, 1f, 1f,
-                 0.5f,  0.5f,  0.5f,  1f, 1f, 1f,
-                -0.5f,  0.5f,  0.5f,  0f, 0f, 0f
-            };
+        // positions          // normals          
+        -0.5f, -0.5f, -0.5f,  0f,  0f, -1f,  0f, 0f,
+         0.5f, -0.5f, -0.5f,  0f,  0f, -1f,  1f, 0f,
+         0.5f,  0.5f, -0.5f,  0f,  0f, -1f,  1f, 1f,
+        -0.5f,  0.5f, -0.5f,  0f,  0f, -1f,  0f, 1f,
+
+        -0.5f, -0.5f,  0.5f,  0f,  0f,  1f,  0f, 0f,
+         0.5f, -0.5f,  0.5f,  0f,  0f,  1f,  1f, 0f,
+         0.5f,  0.5f,  0.5f,  0f,  0f,  1f,  1f, 1f,
+        -0.5f,  0.5f,  0.5f,  0f,  0f,  1f,  0f, 1f,
+
+        -0.5f,  0.5f,  0.5f, -1f,  0f,  0f,  0f, 0f,
+        -0.5f,  0.5f, -0.5f, -1f,  0f,  0f,  1f, 0f,
+        -0.5f, -0.5f, -0.5f, -1f,  0f,  0f,  1f, 1f,
+        -0.5f, -0.5f,  0.5f, -1f,  0f,  0f,  0f, 1f,
+
+         0.5f,  0.5f,  0.5f,  1f,  0f,  0f,  0f, 0f,
+         0.5f,  0.5f, -0.5f,  1f,  0f,  0f,  1f, 0f,
+         0.5f, -0.5f, -0.5f,  1f,  0f,  0f,  1f, 1f,
+         0.5f, -0.5f,  0.5f,  1f,  0f,  0f,  0f, 1f,
+
+        -0.5f, -0.5f, -0.5f,  0f, -1f,  0f,  0f, 0f,
+         0.5f, -0.5f, -0.5f,  0f, -1f,  0f,  1f, 0f,
+         0.5f, -0.5f,  0.5f,  0f, -1f,  0f,  1f, 1f,
+        -0.5f, -0.5f,  0.5f,  0f, -1f,  0f,  0f, 1f,
+
+        -0.5f,  0.5f, -0.5f,  0f,  1f,  0f,  0f, 0f,
+         0.5f,  0.5f, -0.5f,  0f,  1f,  0f,  1f, 0f,
+         0.5f,  0.5f,  0.5f,  0f,  1f,  0f,  1f, 1f,
+        -0.5f,  0.5f,  0.5f,  0f,  1f,  0f,  0f, 1f
+    };
 
             uint[] cubeIndices = {
-                0,1,2, 2,3,0,
-                1,5,6, 6,2,1,
-                7,6,5, 5,4,7,
-                4,0,3, 3,7,4,
-                4,5,1, 1,0,4,
-                3,2,6, 6,7,3
-            };
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4,
+        8, 9,10,10,11, 8,
+        12,13,14,14,15,12,
+        16,17,18,18,19,16,
+        20,21,22,22,23,20
+    };
 
-            _renderer.AddObject(new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(-1f, 0f, 0f)));
-            _renderer.AddObject(new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(1f, 0f, 0f)));
+            float[] floorVertices = {
+        // positions        // normals     
+        -5f, 0f, -5f,  0f, 1f, 0f,  0f, 0f,
+         5f, 0f, -5f,  0f, 1f, 0f,  5f, 0f,
+         5f, 0f,  5f,  0f, 1f, 0f,  5f, 5f,
+        -5f, 0f,  5f,  0f, 1f, 0f,  0f, 5f
+    };
+
+            uint[] floorIndices = { 0, 1, 2, 2, 3, 0 };
+
+            var dullCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(1f, 0.5f, 0f));
+            dullCube.Material = new Graphics.Material()
+            {
+                Ambient = new Vector3(0.2f, 0.1f, 0.1f),
+                Diffuse = new Vector3(0.6f, 0.3f, 0.3f),
+                Specular = new Vector3(0.3f),
+                Shininess = 5f
+            };
+            _renderer.AddObject(dullCube);
+
+            var shinyCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(-1f, 0.5f, 0f));
+            shinyCube.Material = new Graphics.Material()
+            {
+                Ambient = new Vector3(0.1f, 0.1f, 0.2f),
+                Diffuse = new Vector3(0.3f, 0.3f, 0.6f),
+                Specular = new Vector3(1f),
+                Shininess = 33f
+            };
+            _renderer.AddObject(shinyCube);
+
+            var floorTexture = new Graphics.Texture("texture/floortest.png");
+
+            var floorMesh = new Mesh(floorVertices, floorIndices, Matrix4.Identity)
+            {
+                Material = new Graphics.Material()
+                {
+                    Ambient = new Vector3(0.2f, 0.2f, 0.2f),
+                    Diffuse = new Vector3(0.5f, 0.5f, 0.5f),
+                    Specular = new Vector3(0.1f),
+                    Shininess = 2f,
+                    DiffuseTexture = floorTexture
+                }
+            };
+            _renderer.AddObject(floorMesh);
+
+            var light1 = new Light(new Vector3(2f, 4f, 2f), new Vector3(1f, 1f, 1f), 1.0f);
+            _renderer.AddLight(light1);
+
+            var light2 = new Light(new Vector3(-2f, 4f, -2f), new Vector3(2f, 4f, 3f), 0.1f);
+            _renderer.AddLight(light2);
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
@@ -65,9 +135,12 @@ namespace TinyEngine
                 0.1f,
                 100f);
 
+            _renderer.SetCameraPosition(_camera.Position);
             _renderer.Render(view, projection);
+
             SwapBuffers();
         }
+
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
@@ -86,10 +159,16 @@ namespace TinyEngine
             if (input.IsKeyDown(Keys.LeftShift)) moveDir -= _camera.Up;
 
             if (input.IsKeyDown(Keys.R))
-                _camera.Position = new Vector3(0f, 0f, 3f);
+                _camera.Position = Vector3.Zero;
 
             if (moveDir.LengthSquared > 0)
                 _camera.Move(Vector3.Normalize(moveDir), dt);
+
+            if (input.IsKeyDown(Keys.K))
+                CursorState = CursorState.Normal;
+
+            else if (input.IsKeyDown(Keys.L))
+                CursorState = CursorState.Grabbed;
 
             var mouse = MouseState;
             if (_firstMove)
