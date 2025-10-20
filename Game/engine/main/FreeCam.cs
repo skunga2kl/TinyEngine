@@ -1,6 +1,6 @@
 ﻿using OpenTK.Mathematics;
 
-namespace window
+namespace TinyEngine.Camera
 {
     public class FreeCam
     {
@@ -9,13 +9,15 @@ namespace window
         public float Yaw { get; set; } = -90f;
         public float Speed { get; set; } = 3f;
         public float Sensitivity { get; set; } = 0.2f;
+        public Quaternion rot { get; set; } = new Quaternion(0, 0, 0);
 
         private Vector3 _front = -Vector3.UnitZ;
         private Vector3 _up = Vector3.UnitY;
         private Vector3 _right = Vector3.UnitX;
 
-        public FreeCam(Vector3 startPosition)
+        public FreeCam(Vector3 startPosition, Quaternion startRotation)
         {
+            rot = startRotation;
             Position = startPosition;
             UpdateVectors();
         }

@@ -12,14 +12,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Shaders\" />
+    <Folder Include="shaders\" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Shaders\fragmentShader.glsl">
+    <None Update="shaders\fragmentShader.glsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\vertexShader.glsl">
+    <None Update="shaders\vertexShader.glsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
