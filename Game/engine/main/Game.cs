@@ -82,18 +82,22 @@ namespace TinyEngine
 
             uint[] floorIndices = { 0, 1, 2, 2, 3, 0 };
 
-            var dullCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(1f, 0.5f, 0f));
-            dullCube.Material = new Graphics.Material()
+            var dullCubeTexture = new Texture("texture/dulltest.png");
+            var dullCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(1f, 0.5f, 0f))
             {
-                Ambient = new Vector3(0.2f, 0.1f, 0.1f),
-                Diffuse = new Vector3(0.6f, 0.3f, 0.3f),
-                Specular = new Vector3(0.3f),
-                Shininess = 5f
+                Material = new Material()
+                {
+                    Ambient = new Vector3(0.2f, 0.1f, 0.1f),
+                    Diffuse = new Vector3(0.6f, 0.3f, 0.3f),
+                    Specular = new Vector3(0.1f),
+                    Shininess = 4f,
+                    DiffuseTexture = dullCubeTexture
+                }
             };
             _renderer.AddObject(dullCube);
 
             var shinyCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(-1f, 0.5f, 0f));
-            shinyCube.Material = new Graphics.Material()
+            shinyCube.Material = new Material()
             {
                 Ambient = new Vector3(0.1f, 0.1f, 0.2f),
                 Diffuse = new Vector3(0.3f, 0.3f, 0.6f),
@@ -102,11 +106,24 @@ namespace TinyEngine
             };
             _renderer.AddObject(shinyCube);
 
-            var floorTexture = new Graphics.Texture("texture/floortest.png");
+            var cubeTexture = new Texture("texture/cubetest.png");
+            var texturedCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(0f, 0.5f, -2f))
+            {
+                Material = new Material()
+                {
+                    Ambient = new Vector3(0.2f, 0.2f, 0.2f),
+                    Diffuse = new Vector3(0.5f, 0.5f, 0.5f),
+                    Specular = new Vector3(0.1f),
+                    Shininess = 7f,
+                    DiffuseTexture = cubeTexture
+                }
+            };
+            _renderer.AddObject(texturedCube);
 
+            var floorTexture = new Texture("texture/floortest.png");
             var floorMesh = new Mesh(floorVertices, floorIndices, Matrix4.Identity)
             {
-                Material = new Graphics.Material()
+                Material = new Material()
                 {
                     Ambient = new Vector3(0.2f, 0.2f, 0.2f),
                     Diffuse = new Vector3(0.5f, 0.5f, 0.5f),
@@ -119,9 +136,6 @@ namespace TinyEngine
 
             var light1 = new Light(new Vector3(2f, 4f, 2f), new Vector3(1f, 1f, 1f), 1.0f);
             _renderer.AddLight(light1);
-
-            var light2 = new Light(new Vector3(-2f, 4f, -2f), new Vector3(2f, 4f, 3f), 0.1f);
-            _renderer.AddLight(light2);
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)

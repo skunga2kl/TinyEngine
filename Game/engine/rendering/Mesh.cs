@@ -68,12 +68,12 @@ namespace TinyEngine
             {
                 GL.ActiveTexture(TextureUnit.Texture0);
                 GL.BindTexture(TextureTarget.Texture2D, Material.DiffuseTexture.Handle);
-                shader.SetInt("material.hasTexture", 1);
+                shader.SetInt("material.useTexture", 1);
                 shader.SetInt("material.diffuseTexture", 0);
             }
             else
             {
-                shader.SetInt("material.hasTexture", 0);
+                shader.SetInt("material.useTexture", 0);
             }
 
             GL.BindVertexArray(_vao);
@@ -85,6 +85,11 @@ namespace TinyEngine
             GL.DeleteBuffer(_vbo);
             GL.DeleteBuffer(_ebo);
             GL.DeleteVertexArray(_vao);
+        }
+
+        public void SetModel(Matrix4 model)
+        {
+            _model = model;
         }
     }
 }

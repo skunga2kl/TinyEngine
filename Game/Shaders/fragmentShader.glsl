@@ -1,5 +1,12 @@
 #version 330 core
-#define MAX_LIGHTS 8
+
+struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+    bool useTexture;
+};
 
 struct Light {
     vec3 position;
@@ -7,30 +14,42 @@ struct Light {
     float intensity;
 };
 
-uniform Light lights[MAX_LIGHTS];
+uniform Material material;
+uniform Light lights[8];
 uniform int lightCount;
 uniform vec3 viewPos;
 
 in vec3 FragPos;
 in vec3 Normal;
+in vec2 TexCoord;
 
 out vec4 FragColor;
 
+uniform sampler2D diffuseTexture;
+
 void main()
 {
+    vec3 ambient = material.ambient;
+
     vec3 norm = normalize(Normal);
+    vec3 viewDir = normalize(viewPos - FragPos);
+
     vec3 result = vec3(0.0);
 
     for (int i = 0; i < lightCount; i++) {
         vec3 lightDir = normalize(lights[i].position - FragPos);
         float diff = max(dot(norm, lightDir), 0.0);
+        vec3 diffuse = diff * material.diffuse * lights[i].color * lights[i].intensity;
 
-        float distance = length(lights[i].position - FragPos);
-        float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
+        vec3 reflectDir = reflect(-lightDir, norm);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+        vec3 specular = spec * material.specular * lights[i].color * lights[i].intensity;
 
-        vec3 diffuse = lights[i].color * diff * lights[i].intensity * attenuation;
-        result += diffuse;
+        result += ambient + diffuse + specular;
     }
 
-    FragColor = vec4(result, 1.0);
+    if (material.useTexture)
+        FragColor = texture(diffuseTexture, TexCoord) * vec4(result, 1.0);
+    else
+        FragColor = vec4(result, 1.0);
 }

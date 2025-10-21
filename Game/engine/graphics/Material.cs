@@ -1,5 +1,4 @@
 ﻿using OpenTK.Mathematics;
-using System.Security.Cryptography.X509Certificates;
 
 namespace TinyEngine.Graphics
 {  
