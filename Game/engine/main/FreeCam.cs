@@ -45,7 +45,7 @@ namespace TinyEngine.Camera
             UpdateVectors();
         }
 
-        private void UpdateVectors()
+        public void UpdateVectors()
         {
             Vector3 front;
             front.X = MathF.Cos(MathHelper.DegreesToRadians(Yaw)) * MathF.Cos(MathHelper.DegreesToRadians(Pitch));

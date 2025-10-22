@@ -3,7 +3,7 @@ using System.IO;
 using OpenTK.Graphics.OpenGL4;
 using StbImageSharp;
 
-namespace TinyEngine.Graphics
+namespace TinyEngine.TGraphics
 {
     public class Texture
     {

@@ -1,6 +1,6 @@
 ﻿using OpenTK.Mathematics;
 
-namespace TinyEngine.Graphics
+namespace TinyEngine.TGraphics
 {  
     public class Material
     {

@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using TinyEngine.Camera;
-using TinyEngine.Graphics;
+using TinyEngine.Core;
+using TinyEngine.TGraphics;
 
 namespace TinyEngine
 {
@@ -13,156 +15,173 @@ namespace TinyEngine
     {
         private Renderer _renderer;
         private FreeCam _camera;
-        private Vector2 _lastMousePos;
+        private Scene _scene;
+        private DevConsole _devConsole;
+        private Mesh _cube;
+
         private bool _firstMove = true;
+        private Vector2 _lastMousePos;
 
         public Game(GameWindowSettings gws, NativeWindowSettings nws) : base(gws, nws) { }
 
         protected override void OnLoad()
         {
             base.OnLoad();
+
             GL.ClearColor(0.1f, 0.1f, 0.2f, 1.0f);
             GL.Enable(EnableCap.DepthTest);
 
             _renderer = new Renderer();
             _renderer.Initialize();
 
-            _camera = new FreeCam(new Vector3(0f, 1.5f, 4f), new Quaternion(0, 0, 0));
+            _camera = new FreeCam(new Vector3(0f, 1.5f, 4f), Quaternion.Identity);
             CursorState = CursorState.Grabbed;
 
+            _scene = new Scene();
+
             float[] cubeVertices = {
-        // positions          // normals          
-        -0.5f, -0.5f, -0.5f,  0f,  0f, -1f,  0f, 0f,
-         0.5f, -0.5f, -0.5f,  0f,  0f, -1f,  1f, 0f,
-         0.5f,  0.5f, -0.5f,  0f,  0f, -1f,  1f, 1f,
-        -0.5f,  0.5f, -0.5f,  0f,  0f, -1f,  0f, 1f,
+            // positions          // normals           // UVs
+            // front face
+            -0.5f, -0.5f,  0.5f,  0f,  0f,  1f,  0f, 0f,
+            0.5f, -0.5f,  0.5f,  0f,  0f,  1f,  1f, 0f,
+            0.5f,  0.5f,  0.5f,  0f,  0f,  1f,  1f, 1f,
+            -0.5f,  0.5f,  0.5f,  0f,  0f,  1f,  0f, 1f,
 
-        -0.5f, -0.5f,  0.5f,  0f,  0f,  1f,  0f, 0f,
-         0.5f, -0.5f,  0.5f,  0f,  0f,  1f,  1f, 0f,
-         0.5f,  0.5f,  0.5f,  0f,  0f,  1f,  1f, 1f,
-        -0.5f,  0.5f,  0.5f,  0f,  0f,  1f,  0f, 1f,
+            // back face
+            -0.5f, -0.5f, -0.5f,  0f,  0f, -1f,  1f, 0f,
+            0.5f, -0.5f, -0.5f,  0f,  0f, -1f,  0f, 0f,
+            0.5f,  0.5f, -0.5f,  0f,  0f, -1f,  0f, 1f,
+            -0.5f,  0.5f, -0.5f,  0f,  0f, -1f,  1f, 1f,
 
-        -0.5f,  0.5f,  0.5f, -1f,  0f,  0f,  0f, 0f,
-        -0.5f,  0.5f, -0.5f, -1f,  0f,  0f,  1f, 0f,
-        -0.5f, -0.5f, -0.5f, -1f,  0f,  0f,  1f, 1f,
-        -0.5f, -0.5f,  0.5f, -1f,  0f,  0f,  0f, 1f,
+            // left face
+            -0.5f, -0.5f, -0.5f, -1f,  0f,  0f,  0f, 0f,
+            -0.5f, -0.5f,  0.5f, -1f,  0f,  0f,  1f, 0f,
+            -0.5f,  0.5f,  0.5f, -1f,  0f,  0f,  1f, 1f,
+            -0.5f,  0.5f, -0.5f, -1f,  0f,  0f,  0f, 1f,
 
-         0.5f,  0.5f,  0.5f,  1f,  0f,  0f,  0f, 0f,
-         0.5f,  0.5f, -0.5f,  1f,  0f,  0f,  1f, 0f,
-         0.5f, -0.5f, -0.5f,  1f,  0f,  0f,  1f, 1f,
-         0.5f, -0.5f,  0.5f,  1f,  0f,  0f,  0f, 1f,
+            // right face
+            0.5f, -0.5f, -0.5f,  1f,  0f,  0f,  1f, 0f,
+            0.5f, -0.5f,  0.5f,  1f,  0f,  0f,  0f, 0f,
+            0.5f,  0.5f,  0.5f,  1f,  0f,  0f,  0f, 1f,
+            0.5f,  0.5f, -0.5f,  1f,  0f,  0f,  1f, 1f,
 
-        -0.5f, -0.5f, -0.5f,  0f, -1f,  0f,  0f, 0f,
-         0.5f, -0.5f, -0.5f,  0f, -1f,  0f,  1f, 0f,
-         0.5f, -0.5f,  0.5f,  0f, -1f,  0f,  1f, 1f,
-        -0.5f, -0.5f,  0.5f,  0f, -1f,  0f,  0f, 1f,
+            // top face
+            -0.5f,  0.5f, -0.5f,  0f,  1f,  0f,  0f, 1f,
+            0.5f,  0.5f, -0.5f,  0f,  1f,  0f,  1f, 1f,
+            0.5f,  0.5f,  0.5f,  0f,  1f,  0f,  1f, 0f,
+            -0.5f,  0.5f,  0.5f,  0f,  1f,  0f,  0f, 0f,
 
-        -0.5f,  0.5f, -0.5f,  0f,  1f,  0f,  0f, 0f,
-         0.5f,  0.5f, -0.5f,  0f,  1f,  0f,  1f, 0f,
-         0.5f,  0.5f,  0.5f,  0f,  1f,  0f,  1f, 1f,
-        -0.5f,  0.5f,  0.5f,  0f,  1f,  0f,  0f, 1f
-    };
+            // bottom face
+            -0.5f, -0.5f, -0.5f,  0f, -1f,  0f,  0f, 0f,
+            0.5f, -0.5f, -0.5f,  0f, -1f,  0f,  1f, 0f,
+            0.5f, -0.5f,  0.5f,  0f, -1f,  0f,  1f, 1f,
+            -0.5f, -0.5f,  0.5f,  0f, -1f,  0f,  0f, 1f
+            };
 
             uint[] cubeIndices = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4,
-        8, 9,10,10,11, 8,
-        12,13,14,14,15,12,
-        16,17,18,18,19,16,
-        20,21,22,22,23,20
-    };
-
-            float[] floorVertices = {
-        // positions        // normals     
-        -5f, 0f, -5f,  0f, 1f, 0f,  0f, 0f,
-         5f, 0f, -5f,  0f, 1f, 0f,  5f, 0f,
-         5f, 0f,  5f,  0f, 1f, 0f,  5f, 5f,
-        -5f, 0f,  5f,  0f, 1f, 0f,  0f, 5f
-    };
-
-            uint[] floorIndices = { 0, 1, 2, 2, 3, 0 };
-
-            var dullCubeTexture = new Texture("texture/dulltest.png");
-            var dullCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(1f, 0.5f, 0f))
-            {
-                Material = new Material()
-                {
-                    Ambient = new Vector3(0.2f, 0.1f, 0.1f),
-                    Diffuse = new Vector3(0.6f, 0.3f, 0.3f),
-                    Specular = new Vector3(0.1f),
-                    Shininess = 4f,
-                    DiffuseTexture = dullCubeTexture
-                }
+            0, 1, 2, 2, 3, 0,       // front
+            4, 5, 6, 6, 7, 4,       // back
+            8, 9,10,10,11, 8,       // left
+            12,13,14,14,15,12,      // right
+            16,17,18,18,19,16,      // top
+            20,21,22,22,23,20       // bottom
             };
-            _renderer.AddObject(dullCube);
-
-            var shinyCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(-1f, 0.5f, 0f));
-            shinyCube.Material = new Material()
-            {
-                Ambient = new Vector3(0.1f, 0.1f, 0.2f),
-                Diffuse = new Vector3(0.3f, 0.3f, 0.6f),
-                Specular = new Vector3(1f),
-                Shininess = 33f
-            };
-            _renderer.AddObject(shinyCube);
 
             var cubeTexture = new Texture("texture/cubetest.png");
-            var texturedCube = new Mesh(cubeVertices, cubeIndices, Matrix4.CreateTranslation(0f, 0.5f, -2f))
+            _cube = new Mesh(cubeVertices, cubeIndices)
             {
                 Material = new Material()
                 {
-                    Ambient = new Vector3(0.2f, 0.2f, 0.2f),
-                    Diffuse = new Vector3(0.5f, 0.5f, 0.5f),
-                    Specular = new Vector3(0.1f),
-                    Shininess = 7f,
+                    Ambient = new Vector3(0.2f),
+                    Diffuse = new Vector3(0.5f),
+                    Specular = new Vector3(0.5f),
+                    Shininess = 32f,
                     DiffuseTexture = cubeTexture
                 }
             };
-            _renderer.AddObject(texturedCube);
+            _cube.Transform.position = new Vector3(0f, 1f, 0f);
+            _scene.Add(_cube);
+
+            float[] floorVertices = {
+                -5f, 0f, -5f, 0f, 1f, 0f, 0f, 0f,
+                 5f, 0f, -5f, 0f, 1f, 0f, 5f, 0f,
+                 5f, 0f,  5f, 0f, 1f, 0f, 5f, 5f,
+                -5f, 0f,  5f, 0f, 1f, 0f, 0f, 5f
+            };
+
+            uint[] floorIndices = { 0, 1, 2, 2, 3, 0 };
 
             var floorTexture = new Texture("texture/floortest.png");
-            var floorMesh = new Mesh(floorVertices, floorIndices, Matrix4.Identity)
+            var floor = new Mesh(floorVertices, floorIndices)
             {
                 Material = new Material()
                 {
-                    Ambient = new Vector3(0.2f, 0.2f, 0.2f),
-                    Diffuse = new Vector3(0.5f, 0.5f, 0.5f),
+                    Ambient = new Vector3(0.2f),
+                    Diffuse = new Vector3(0.5f),
                     Specular = new Vector3(0.1f),
                     Shininess = 2f,
                     DiffuseTexture = floorTexture
                 }
             };
-            _renderer.AddObject(floorMesh);
+            _scene.Add(floor);
 
-            var light1 = new Light(new Vector3(2f, 4f, 2f), new Vector3(1f, 1f, 1f), 1.0f);
-            _renderer.AddLight(light1);
+            var light = new Light
+            {
+                Position = new Vector3(2f, 4f, 2f),
+                Color = new Vector3(1f),
+                Intensity = 1.5f
+            };
+            _scene.Add(light);
+
+            _scene.LoadInto(_renderer);
+
+            _devConsole = new DevConsole();
+
+            _devConsole.Register("move", args =>
+            {
+                if (args.Length < 3) { Console.WriteLine("Usage: move x y z"); return; }
+
+                if (float.TryParse(args[0], out float x) &&
+                    float.TryParse(args[1], out float y) &&
+                    float.TryParse(args[2], out float z))
+                {
+                    _cube.Transform.position = new Vector3(x, y, z);
+                    Console.WriteLine($"Moved cube to: {_cube.Transform.position}");
+                }
+            });
+
+            _devConsole.Register("scale", args =>
+            {
+                if (args.Length < 3) { Console.WriteLine("Usage: scale x y z"); return; }
+
+                if (float.TryParse(args[0], out float x) &&
+                    float.TryParse(args[1], out float y) &&
+                    float.TryParse(args[2], out float z))
+                {
+                    _cube.Transform.scale = new Vector3(x, y, z);
+                    Console.WriteLine($"Scaled cube to: {_cube.Transform.scale}");
+                }
+            });
+
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    Console.Write("> ");
+                    string? input = Console.ReadLine();
+                    if (!string.IsNullOrWhiteSpace(input))
+                        _devConsole.Execute(input);
+                }
+            });
         }
-
-        protected override void OnRenderFrame(FrameEventArgs args)
-        {
-            base.OnRenderFrame(args);
-
-            Matrix4 view = _camera.GetViewMatrix();
-            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(
-                MathHelper.DegreesToRadians(70f),
-                Size.X / (float)Size.Y,
-                0.1f,
-                100f);
-
-            _renderer.SetCameraPosition(_camera.Position);
-            _renderer.Render(view, projection);
-
-            SwapBuffers();
-        }
-
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
             base.OnUpdateFrame(args);
             if (!IsFocused) return;
 
-            var input = KeyboardState;
             float dt = (float)args.Time;
+            var input = KeyboardState;
 
             Vector3 moveDir = Vector3.Zero;
             if (input.IsKeyDown(Keys.W)) moveDir += _camera.Front;
@@ -172,17 +191,8 @@ namespace TinyEngine
             if (input.IsKeyDown(Keys.Space)) moveDir += _camera.Up;
             if (input.IsKeyDown(Keys.LeftShift)) moveDir -= _camera.Up;
 
-            if (input.IsKeyDown(Keys.R))
-                _camera.Position = Vector3.Zero;
-
             if (moveDir.LengthSquared > 0)
                 _camera.Move(Vector3.Normalize(moveDir), dt);
-
-            if (input.IsKeyDown(Keys.K))
-                CursorState = CursorState.Normal;
-
-            else if (input.IsKeyDown(Keys.L))
-                CursorState = CursorState.Grabbed;
 
             var mouse = MouseState;
             if (_firstMove)
@@ -201,6 +211,22 @@ namespace TinyEngine
                 Close();
         }
 
+        protected override void OnRenderFrame(FrameEventArgs args)
+        {
+            base.OnRenderFrame(args);
+
+            Matrix4 view = _camera.GetViewMatrix();
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(
+                MathHelper.DegreesToRadians(70f),
+                Size.X / (float)Size.Y,
+                0.1f, 100f);
+
+            _renderer.SetCameraPosition(_camera.Position);
+            _renderer.Render(view, projection);
+
+            SwapBuffers();
+        }
+
         protected override void OnUnload()
         {
             base.OnUnload();
@@ -210,14 +236,14 @@ namespace TinyEngine
         public static void Main()
         {
             var gws = GameWindowSettings.Default;
-            var nws = new NativeWindowSettings()
+            var nws = new NativeWindowSettings
             {
                 Size = new Vector2i(1280, 720),
-                Title = "window"
+                Title = "TinyEngine"
             };
 
-            using (var game = new Game(gws, nws))
-                game.Run();
+            using var game = new Game(gws, nws);
+            game.Run();
         }
     }
 }

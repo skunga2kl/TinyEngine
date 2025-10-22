@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
-using TinyEngine.Graphics;
+using TinyEngine.TGraphics;
 
 namespace TinyEngine
 {
@@ -56,6 +56,12 @@ namespace TinyEngine
 
             foreach (var obj in _objects)
                 obj.Draw(_shader, view, projection);
+        }
+
+        public void ClearObjects()
+        {
+            _objects.Clear();
+            _lights.Clear();
         }
 
         public void Cleanup()

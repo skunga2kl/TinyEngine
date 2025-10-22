@@ -1,23 +1,34 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
-using TinyEngine.Graphics;
+using TinyEngine.TGraphics;
+using TinyEngine.Core;
 
 namespace TinyEngine
 {
     public class Mesh : IRenderer
     {
+        public string Name { get; set; } = "Unnamed";
+
         private int _vao, _vbo, _ebo;
         private readonly float[] _vertices;
         private readonly uint[] _indices;
         private Matrix4 _model;
 
         public Material Material { get; set; } = new();
+        public Transform Transform { get; set; } = new();
 
         public Mesh(float[] vertices, uint[] indices, Matrix4? model = null)
         {
             _vertices = vertices;
             _indices = indices;
+
             _model = model ?? Matrix4.Identity;
+            Transform.position = _model.ExtractTranslation();
+            Transform.scale = new Vector3(
+                _model.Column0.Length,
+                _model.Column1.Length,
+                _model.Column2.Length
+                );
         }
 
         public void Initialize()
@@ -55,7 +66,7 @@ namespace TinyEngine
         {
             shader.Use();
 
-            shader.SetMatrix4("model", _model);
+            shader.SetMatrix4("model", Transform.GetMatrix());
             shader.SetMatrix4("view", view);
             shader.SetMatrix4("projection", projection);
 
