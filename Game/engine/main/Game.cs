@@ -1,10 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
-using OpenTK.Graphics.OpenGL4;
+﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using System;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using TinyEngine.Camera;
 using TinyEngine.Core;
 using TinyEngine.TGraphics;
@@ -18,6 +19,7 @@ namespace TinyEngine
         private Scene _scene;
         private DevConsole _devConsole;
         private Mesh _cube;
+        private bool _cursorVisible = false;
 
         private bool _firstMove = true;
         private Vector2 _lastMousePos;
@@ -93,13 +95,15 @@ namespace TinyEngine
                 Material = new Material()
                 {
                     Ambient = new Vector3(0.2f),
-                    Diffuse = new Vector3(0.5f),
-                    Specular = new Vector3(0.5f),
-                    Shininess = 32f,
+                    Diffuse = new Vector3(0.3f),
+                    Specular = new Vector3(0.4f),
+                    Shininess = 5f,
                     DiffuseTexture = cubeTexture
                 }
             };
             _cube.Transform.position = new Vector3(0f, 1f, 0f);
+
+            _cube.Name = "superman";
             _scene.Add(_cube);
 
             float[] floorVertices = {
@@ -131,6 +135,7 @@ namespace TinyEngine
                 Color = new Vector3(1f),
                 Intensity = 1.5f
             };
+            
             _scene.Add(light);
 
             _scene.LoadInto(_renderer);
@@ -139,14 +144,27 @@ namespace TinyEngine
 
             _devConsole.Register("move", args =>
             {
-                if (args.Length < 3) { Console.WriteLine("Usage: move x y z"); return; }
-
-                if (float.TryParse(args[0], out float x) &&
-                    float.TryParse(args[1], out float y) &&
-                    float.TryParse(args[2], out float z))
+                if (args.Length < 4)
                 {
-                    _cube.Transform.position = new Vector3(x, y, z);
-                    Console.WriteLine($"Moved cube to: {_cube.Transform.position}");
+                    Console.WriteLine("Usage: move <name> x y z");
+                    return;
+                }
+
+                string name = args[0];
+
+                if (float.TryParse(args[1], out float x) &&
+                    float.TryParse(args[2], out float y) &&
+                    float.TryParse(args[3], out float z))
+                {
+                    var mesh = _scene.FindObject(name);
+                    if (mesh == null)
+                    {
+                        Console.WriteLine($"Object '{name}' not found.");
+                        return;
+                    }
+
+                    mesh.Transform.position = new Vector3(x, y, z);
+                    Console.WriteLine($"Moved '{name}' to ({x}, {y}, {z}).");
                 }
             });
 
@@ -161,6 +179,227 @@ namespace TinyEngine
                     _cube.Transform.scale = new Vector3(x, y, z);
                     Console.WriteLine($"Scaled cube to: {_cube.Transform.scale}");
                 }
+            });
+
+            _devConsole.Register("close", args =>
+            {
+                Close();
+            });
+
+            _devConsole.Register("rotate", args =>
+            {
+                if (args.Length < 4)
+                {
+                    Console.WriteLine("Usage: rotate <name> x y z");
+                    return;
+                }
+
+                string name = args[0];
+
+                if (float.TryParse(args[1], out float x) &&
+                    float.TryParse(args[2], out float y) &&
+                    float.TryParse(args[3], out float z))
+                {
+                    var mesh = _scene.FindObject(name);
+                    if (mesh == null)
+                    {
+                        Console.WriteLine($"Object '{name}' not found.");
+                        return;
+                    }
+
+                    Vector3 Rotation = new Vector3(
+                        MathHelper.DegreesToRadians(x),
+                        MathHelper.DegreesToRadians(y),
+                        MathHelper.DegreesToRadians(z)
+                    );
+
+                    mesh.Transform.rotation = Rotation;
+
+                    Console.WriteLine($"Rotated '{name}' to {x}, {y}, {z} degrees.");
+                }
+                else
+                {
+                    Console.WriteLine("Invalid arguments. Usage: rotate <name> x y z");
+                }
+            });
+
+            _devConsole.Register("listobj", args =>
+            {
+                _scene.ListObjectNames();
+            });
+
+            _devConsole.Register("setname", args =>
+            {
+                if (args.Length < 2)
+                {
+                    Console.WriteLine("Usage: setname <oldName> <newName>");
+                    return;
+                }
+
+                string oldName = args[0];
+                string newName = args[1];
+
+                var mesh = _scene.FindObject(oldName);
+                if (mesh == null)
+                {
+                    Console.WriteLine($"Object '{oldName}' not found.");
+                    return;
+                }
+
+                mesh.Name = newName;
+                Console.WriteLine($"Renamed '{oldName}' to '{newName}'.");
+            });
+
+            _devConsole.Register("delete", args =>
+            {
+                if (args.Length < 1)
+                {
+                    Console.WriteLine("Usage: delete <name>");
+                    return;
+                }
+
+                string name = args[0];
+
+                if (_scene.Remove(name, _renderer))
+                    Console.WriteLine($"Deleted '{name}' from scene.");
+                else
+                    Console.WriteLine($"Object '{name}' not found.");
+            });
+
+            _devConsole.Register("spawn", args =>
+            {
+                if (args.Length < 1)
+                {
+                    Console.WriteLine("Usage: spawn <name> [x y z]");
+                    return;
+                }
+
+                string name = args[0];
+                Vector3 position = Vector3.Zero;
+
+                if (args.Length >= 4 &&
+                    float.TryParse(args[1], out float x) &&
+                    float.TryParse(args[2], out float y) &&
+                    float.TryParse(args[3], out float z))
+                {
+                    position = new Vector3(x, y, z);
+                }
+
+                GLThread.Enqueue(() =>
+                {
+                    var mesh = Mesh.CreateCube();
+                    mesh.Name = name;
+                    mesh.Transform.position = position;
+
+                    _scene.Add(mesh);
+                    _renderer.AddObject(mesh);
+
+                    Console.WriteLine($"Spawned '{name}' at ({position.X}, {position.Y}, {position.Z}).");
+                });
+            });
+
+            _devConsole.Register("setmaterial", args =>
+            {
+                if (args.Length < 2)
+                {
+                    Console.WriteLine("Usage: addmaterial <objectName> <preset>");
+                    Console.WriteLine("Presets: metal, plastic, gold, matte");
+                    return;
+                }
+
+                string objectName = args[0];
+                string preset = args[1].ToLower();
+
+                GLThread.Enqueue(() =>
+                {
+                    var mesh = _scene.FindObject(objectName);
+                    if (mesh == null)
+                    {
+                        Console.WriteLine($"Object '{objectName}' not found.");
+                        return;
+                    }
+
+                    var mat = new Material();
+
+                    switch (preset)
+                    {
+                        case "metal":
+                            mat.Ambient = new Vector3(0.25f, 0.25f, 0.25f);
+                            mat.Diffuse = new Vector3(0.4f, 0.4f, 0.4f);
+                            mat.Specular = new Vector3(0.77f, 0.77f, 0.77f);
+                            mat.Shininess = 64f;
+                            break;
+
+                        case "plastic":
+                            mat.Ambient = new Vector3(0.1f, 0.1f, 0.1f);
+                            mat.Diffuse = new Vector3(0.6f, 0.6f, 0.6f);
+                            mat.Specular = new Vector3(0.5f, 0.5f, 0.5f);
+                            mat.Shininess = 32f;
+                            break;
+
+                        case "gold":
+                            mat.Ambient = new Vector3(0.24725f, 0.1995f, 0.0745f);
+                            mat.Diffuse = new Vector3(0.75164f, 0.60648f, 0.22648f);
+                            mat.Specular = new Vector3(0.628281f, 0.555802f, 0.366065f);
+                            mat.Shininess = 51.2f;
+                            break;
+
+                        case "matte":
+                            mat.Ambient = new Vector3(0.2f);
+                            mat.Diffuse = new Vector3(0.5f);
+                            mat.Specular = Vector3.Zero;
+                            mat.Shininess = 1f;
+                            break;
+
+                        default:
+                            Console.WriteLine($"Unknown preset '{preset}'.");
+                            return;
+                    }
+
+                    mesh.Material = mat;
+                    Console.WriteLine($"Set material '{preset}' for '{objectName}'.");
+                });
+            });
+
+            _devConsole.Register("addtexture", args =>
+            {
+                if (args.Length < 2)
+                {
+                    Console.WriteLine("Usage: addtexture <objectName> <textureFile>");
+                    return;
+                }
+
+                string objectName = args[0];
+
+                string baseDir = Path.Combine(AppContext.BaseDirectory, "texture");
+                string texturePath = Path.Combine(baseDir, args[1]);
+
+                if (!File.Exists(texturePath))
+                {
+                    Console.WriteLine($"Texture file not found: {texturePath}");
+                    return;
+                }
+
+                GLThread.Enqueue(() =>
+                {
+                    var mesh = _scene.FindObject(objectName);
+                    if (mesh == null)
+                    {
+                        Console.WriteLine($"Object '{objectName}' not found.");
+                        return;
+                    }
+
+                    try
+                    {
+                        var texture = new Texture(texturePath);
+                        mesh.Material.DiffuseTexture = texture;
+                        Console.WriteLine($"Applied texture '{Path.GetFileName(texturePath)}' to '{objectName}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to load texture '{texturePath}': {ex.Message}");
+                    }
+                });
             });
 
             Task.Run(() =>
@@ -182,6 +421,16 @@ namespace TinyEngine
 
             float dt = (float)args.Time;
             var input = KeyboardState;
+
+            if (input.IsKeyPressed(Keys.F10))
+            {
+                _cursorVisible = !_cursorVisible;
+
+                CursorState = _cursorVisible ? CursorState.Normal : CursorState.Grabbed;
+            }
+
+            if (_cursorVisible)
+                return;
 
             Vector3 moveDir = Vector3.Zero;
             if (input.IsKeyDown(Keys.W)) moveDir += _camera.Front;
@@ -215,6 +464,8 @@ namespace TinyEngine
         {
             base.OnRenderFrame(args);
 
+            GLThread.ExecutePending();
+
             Matrix4 view = _camera.GetViewMatrix();
             Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(
                 MathHelper.DegreesToRadians(70f),
@@ -244,6 +495,22 @@ namespace TinyEngine
 
             using var game = new Game(gws, nws);
             game.Run();
+        }
+    }
+
+    public static class GLThread
+    {
+        private static readonly ConcurrentQueue<Action> _actions = new();
+
+        public static void Enqueue(Action action)
+        {
+            _actions.Enqueue(action);
+        }
+
+        public static void ExecutePending()
+        {
+            while (_actions.TryDequeue(out var action))
+                action();
         }
     }
 }

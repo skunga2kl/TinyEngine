@@ -58,6 +58,11 @@ namespace TinyEngine
                 obj.Draw(_shader, view, projection);
         }
 
+        public void RemoveObject(IRenderer obj)
+        {
+            _objects.Remove(obj);
+        }
+
         public void ClearObjects()
         {
             _objects.Clear();
